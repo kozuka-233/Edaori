@@ -1,0 +1,4 @@
+__pycache__/
+*.pyc
+.edaori/
+.DS_Store

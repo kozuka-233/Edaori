@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Edaori ナビ</title>
+<style>
+:root{
+  --bg:#f7f7f5; --panel:#ffffff; --ink:#1f2328; --muted:#6b7078; --line:#d8dadd; --soft:#eef0f2;
+  --todo:#8b9098; --active:#2f6fdf; --parked:#c98a0b; --done:#2e9e5b; --rejected:#c4524a; --fork:#5b4bc4;
+  --accent:#2f6fdf; --accent-soft:rgba(47,111,223,.10); --on-accent:#fff;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --bg:#16181c; --panel:#1e2126; --ink:#e7e9ec; --muted:#9aa0a8; --line:#33373e; --soft:#262a30;
+    --todo:#8d939c; --active:#6d9bff; --parked:#e0a93a; --done:#4cc07c; --rejected:#e07a72; --fork:#9d8cff;
+    --accent:#6d9bff; --accent-soft:rgba(109,155,255,.14); --on-accent:#0d1526; }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Sans","Noto Sans JP",sans-serif}
+header{display:flex;max-width:100vw;align-items:center;gap:12px;padding:12px 20px;border-bottom:1px solid var(--line);background:var(--panel);position:sticky;top:0;z-index:5;flex-wrap:wrap}
+header h1{font-size:16px;margin:0;font-weight:700;letter-spacing:.02em}
+header h1 span{color:var(--muted);font-weight:500;margin-left:8px}
+header .sp{flex:1}
+header .meta{color:var(--muted);font-size:12px}
+button,.btn{font:inherit;font-size:13px;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:8px;padding:5px 10px;cursor:pointer}
+button:hover{border-color:var(--accent)}
+button.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+main{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:16px;padding:16px 20px;max-width:1280px;margin:0 auto}
+@media (max-width:900px){main{grid-template-columns:minmax(0,1fr);padding:12px 16px}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.card h2{font-size:12px;margin:0 0 8px;color:var(--muted);font-weight:600;letter-spacing:.08em}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+@media (max-width:600px){.row2{grid-template-columns:1fr}}
+.now .title,.next .title{font-size:16px;font-weight:700;display:flex;align-items:center;gap:8px}
+.next{border-color:var(--accent);background:linear-gradient(var(--accent-soft),var(--accent-soft)),var(--panel)}
+.reason{color:var(--muted);font-size:12.5px;margin-top:4px}
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;padding:1px 8px;border-radius:99px;border:1px solid currentColor;font-weight:600;white-space:nowrap}
+.st-todo{color:var(--todo)} .st-active{color:var(--active)} .st-parked{color:var(--parked)} .st-done{color:var(--done)} .st-rejected{color:var(--rejected)} .st-fork{color:var(--fork)}
+.graph{position:relative;overflow-x:auto}
+.graph svg{position:absolute;left:0;top:0}
+.graph ol{list-style:none;margin:0;padding:0;position:relative}
+.graph li{height:36px;display:flex;align-items:center;gap:8px;border-radius:8px;cursor:pointer;white-space:nowrap;padding-right:8px}
+.graph li:hover{background:var(--soft)}
+.graph li.sel{background:var(--accent-soft)}
+.graph li .t{font-weight:500}
+.graph li.closed .t{color:var(--muted)}
+.graph li.rejected .t{text-decoration:line-through}
+.graph li .c{color:var(--muted);font-size:12.5px;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:0 1 auto}
+.graph li .t{flex:none}
+.graph li{overflow:hidden}
+.tag{font-size:11px;font-weight:700;padding:0 6px;border-radius:4px;color:#fff}
+.tag.head{background:var(--ink);color:var(--panel)} .tag.next{background:var(--accent);color:var(--on-accent)}
+.id{font-family:var(--mono);font-size:11px;color:var(--muted)}
+.list{list-style:none;margin:0;padding:0}
+.list li{display:flex;gap:8px;align-items:baseline;padding:6px 0;border-top:1px solid var(--line);cursor:pointer}
+.list li:first-child{border-top:0}
+.list .sub{color:var(--muted);font-size:12px}
+aside{display:flex;flex-direction:column;gap:16px}
+.detail h3{margin:0 0 4px;font-size:16px}
+.detail .path{color:var(--muted);font-size:12px;margin-bottom:10px}
+.detail dl{margin:0;display:grid;grid-template-columns:84px 1fr;gap:4px 10px;font-size:13px}
+.detail dt{color:var(--muted)}
+.detail dd{margin:0;white-space:pre-wrap}
+pre{font-family:var(--mono);font-size:12px;background:var(--soft);border-radius:8px;padding:10px;white-space:pre-wrap;max-height:320px;overflow:auto;margin:8px 0}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.empty{padding:48px 20px;text-align:center;color:var(--muted)}
+.drop{border:2px dashed var(--line);border-radius:12px;padding:40px;margin:24px auto;max-width:560px}
+.legend{display:flex;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:8px}
+.toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--panel);padding:6px 14px;border-radius:8px;font-size:13px;opacity:0;transition:opacity .2s}
+.toast.on{opacity:1}
+</style>
+</head>
+<body>
+<header>
+  <h1>Edaori<span id="theme">—</span></h1>
+  <div class="sp"></div>
+  <span class="meta" id="meta"></span>
+  <button id="open">branches.json を開く</button>
+  <input type="file" id="file" accept=".json,application/json" hidden>
+</header>
+<div id="app">
+  <div class="empty"><div class="drop">
+    <p><b>branches.json</b> をここにドロップするか、「開く」を押してください。</p>
+    <p style="font-size:12px">ターミナルで <code>python edaori.py view</code> を実行すると、自動更新つきで開きます。</p>
+  </div></div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+"use strict";
+const MARK = {todo:"○", active:"▶", parked:"‖", done:"✓", rejected:"×"};
+const LABEL = {todo:"未着手", active:"進行中", parked:"保留", done:"完了", rejected:"却下"};
+const CLOSED = new Set(["done","rejected"]);
+let DATA = null, SEL = null, lastRaw = "";
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function toast(msg){ const t=$("#toast"); t.textContent=msg; t.classList.add("on"); setTimeout(()=>t.classList.remove("on"),1400); }
+
+// ---------- model helpers (edaori.py と同じ規則)
+const byId = id => DATA.nodes.find(n => n.id === id);
+const kids = id => DATA.nodes.filter(n => n.parentId === id);
+function ancestors(n){ const out=[]; let p=n.parentId && byId(n.parentId); while(p){ out.push(p); p=p.parentId && byId(p.parentId);} return out; }
+const isOpen = n => n.status==="todo" || n.status==="active" || (n.status==="parked" && n.resumeReady);
+function firstOpenIn(n, skip){
+  if (skip.has(n.id)) return null;
+  const ch = kids(n.id);
+  if (isOpen(n) && !ch.length) return n;
+  if (isOpen(n) && n.type !== "fork"){ for (const c of ch){ const h=firstOpenIn(c,skip); if(h) return h; } return n; }
+  for (const c of ch){ const h=firstOpenIn(c,skip); if(h) return h; }
+  return null;
+}
+function nextCandidate(){
+  const head = byId(DATA.session.head);
+  const anc = ancestors(head);
+  const skip = new Set([head.id, ...anc.map(a=>a.id)]);
+  for (const n of DATA.nodes) if (n.pinned && !skip.has(n.id) && isOpen(n)) return {node:n, reason:"★ピン留めした枝"};
+  const chain = [head, ...anc];
+  for (let d=0; d<chain.length; d++){
+    const x = chain[d];
+    for (const c of kids(x.id)){
+      const h = firstOpenIn(c, skip);
+      if (h) return {node:h, reason: x.type==="fork" ? `分岐点「${x.title}」の残り` : d===0 ? "今の枝の中の未完了" : `「${x.title}」の残り`};
+    }
+  }
+  for (const n of DATA.nodes){ const k=kids(n.id); if(n.type==="fork" && !CLOSED.has(n.status) && k.length && k.every(c=>CLOSED.has(c.status))) return {node:n, reason:"子の枝が全部閉じた分岐点 → まとめて done"}; }
+  const parked = DATA.nodes.filter(n=>n.status==="parked");
+  if (parked.length) return {node:null, reason:`残りは保留中の枝のみ（${parked.length}件）`};
+  return null;
+}
+function resumePack(node){
+  const path = [...ancestors(node)].reverse().concat([node]);
+  const forks = ancestors(node).filter(a=>a.type==="fork");
+  const L = [`# Edaori 復帰パック: ${node.title}  [${node.id}]`, `テーマ: ${DATA.session.title}`, "経路: "+path.map(p=>p.title).join(" > "), ""];
+  if (forks.length){
+    L.push(`## ① 分岐した時点の記憶（${forks[0].title}）`, forks[0].snapshot || "（スナップショットなし）", "");
+    if (forks.length>1){ L.push("### さらに上の分岐点（結論のみ）");
+      for (const f of forks.slice(1)){ const dec = kids(f.id).filter(c=>CLOSED.has(c.status)).map(c=>`${c.title}: ${c.conclusion||c.rejectReason||""}`); L.push(`- ${f.title}`+(dec.length?`（${dec.join(" / ")}）`:"")); }
+      L.push(""); }
+  }
+  if (node.snapshot) L.push("## この分岐点のスナップショット", node.snapshot, "");
+  L.push("## ② この枝の途中経過");
+  const before = L.length;
+  (node.notes||[]).forEach(t=>L.push(`- ${t}`));
+  if (node.stoppedAt) L.push(`- 止めた位置: ${node.stoppedAt}`);
+  if (node.parkReason) L.push(`- 止めた理由: ${node.parkReason}`);
+  if (node.resumeWhen) L.push(`- 再開条件: ${node.resumeWhen}`);
+  if (L.length===before) L.push("- （記録なし）");
+  L.push("", "## ③ その後、他の枝で分かったこと");
+  const learned = DATA.nodes.filter(n=>n.id!==node.id && n.status==="done" && n.conclusion && (n.updatedAt||"") >= (node.updatedAt||""));
+  if (learned.length) learned.slice(-10).forEach(n=>L.push(`- ${n.title}: ${n.conclusion}`)); else L.push("- （なし）");
+  L.push("", "## 再開前にやること", "このパックを読んだら、目的・前提・次の一手を3行で復唱し、ユーザーの確認を取ってから再開してください。");
+  return L.join("\n");
+}
+
+// ---------- render
+function badge(n){
+  if (n.type==="fork") return `<span class="badge st-fork">◆ 分岐点${CLOSED.has(n.status)?" ✓":""}</span>`;
+  return `<span class="badge st-${n.status}">${MARK[n.status]} ${LABEL[n.status]}</span>`;
+}
+function sub(n){
+  if (n.conclusion) return "→ "+n.conclusion;
+  if (n.status==="parked") return `保留: ${n.parkReason||"-"}${n.resumeWhen?` ／ 再開: ${n.resumeWhen}`:""}${n.resumeReady?" ✔再開OK":""}`;
+  if (n.status==="rejected") return "却下: "+(n.rejectReason||"");
+  const notes=n.notes||[]; return notes.length ? notes[notes.length-1] : "";
+}
+function order(){
+  const out=[]; const walk=(n,d)=>{ out.push({n,d}); kids(n.id).forEach(c=>walk(c,d+1)); };
+  DATA.nodes.filter(n=>!n.parentId).forEach(r=>walk(r,0)); return out;
+}
+function render(){
+  const s = DATA.session, head = byId(s.head), nx = nextCandidate();
+  $("#theme").textContent = s.title;
+  $("#meta").textContent = "更新 " + (s.updatedAt||"").slice(0,16).replace("T"," ");
+  const open = DATA.nodes.filter(n => ["todo","parked","active"].includes(n.status) && n.id!==head.id && !ancestors(head).some(a=>a.id===n.id) && !(n.type==="fork" && n.status==="active"));
+  const rows = order(), H=36, lane=22, pad=14;
+  const depth = Math.max(...rows.map(r=>r.d));
+  const w = pad*2 + depth*lane + 12;
+  const yOf = {}; rows.forEach((r,i)=>yOf[r.n.id]=i*H+H/2);
+  const xOf = id => pad + rows.find(r=>r.n.id===id).d*lane;
+  let svg = `<svg width="${w}" height="${rows.length*H}" aria-hidden="true">`;
+  for (const {n} of rows){ if(!n.parentId) continue;
+    const xp=xOf(n.parentId), yp=yOf[n.parentId], xc=xOf(n.id), yc=yOf[n.id];
+    const col = CLOSED.has(n.status) ? "var(--line)" : "var(--muted)";
+    svg += `<path d="M${xp} ${yp}V${yc-10}Q${xp} ${yc} ${xp+10} ${yc}H${xc}" fill="none" stroke="${col}" stroke-width="1.5"/>`; }
+  for (const {n} of rows){
+    const x=xOf(n.id), y=yOf[n.id], col = n.type==="fork" ? "var(--fork)" : `var(--${n.status})`;
+    if (n.type==="fork") svg += `<path d="M${x} ${y-7}L${x+7} ${y}L${x} ${y+7}L${x-7} ${y}Z" fill="${col}"/>`;
+    else svg += `<circle cx="${x}" cy="${y}" r="6" fill="${n.status==="todo"?"var(--panel)":col}" stroke="${col}" stroke-width="2"/>`;
+    if (n.id===s.head) svg += `<circle cx="${x}" cy="${y}" r="10.5" fill="none" stroke="var(--ink)" stroke-width="1.5"/>`;
+  }
+  svg += "</svg>";
+  const lis = rows.map(({n}) => `<li data-id="${n.id}" class="${CLOSED.has(n.status)?"closed ":""}${n.status==="rejected"?"rejected ":""}${SEL===n.id?"sel":""}" style="padding-left:${xOf(n.id)+20}px">
+      <span class="t">${esc(n.title)}</span>
+      ${n.id===s.head?'<span class="tag head">HEAD</span>':""}${nx&&nx.node&&nx.node.id===n.id?'<span class="tag next">NEXT</span>':""}${n.pinned?"★":""}
+      <span class="c">${esc(sub(n))}</span><span class="id">${n.id}</span></li>`).join("");
+  $("#app").innerHTML = `<main>
+    <section>
+      <div class="row2">
+        <div class="card now"><h2>NOW ・ 今いる枝</h2><div class="title">${esc(head.title)} ${badge(head)}</div><div class="reason">${esc(sub(head))}</div></div>
+        <div class="card next"><h2>NEXT ・ 次にやること</h2>${nx&&nx.node
+          ? `<div class="title">${esc(nx.node.title)} ${badge(nx.node)}</div><div class="reason">理由: ${esc(nx.reason)}</div><div class="actions"><button class="primary" data-go="${nx.node.id}">この枝の復帰カード →</button></div>`
+          : `<div class="title">${esc(nx?nx.reason:"すべて完了")}</div>`}</div>
+      </div>
+      <div class="card"><h2>グラフ</h2><div class="graph">${svg}<ol>${lis}</ol></div>
+        <div class="legend"><span class="st-todo">○ 未着手</span><span class="st-active">● 進行中</span><span class="st-parked">● 保留</span><span class="st-done">● 完了</span><span class="st-rejected">● 却下</span><span class="st-fork">◆ 分岐点</span><span>◎ HEAD</span></div></div>
+    </section>
+    <aside>
+      <div class="card detail" id="detail">${SEL && byId(SEL) ? detail(byId(SEL)) : '<h2>復帰カード</h2><div class="reason">グラフの枝をクリックすると、戻るための文脈と再開プロンプトが表示されます。</div>'}</div>
+      <div class="card"><h2>未完了 ・ ${open.length}件</h2><ul class="list">${open.map(n=>`<li data-id="${n.id}">${badge(n)}<div><div>${esc(n.title)}</div><div class="sub">${esc(sub(n))}</div></div></li>`).join("") || '<li class="sub">なし</li>'}</ul></div>
+    </aside></main>`;
+}
+function detail(n){
+  const path=[...ancestors(n)].reverse().map(a=>a.title).join(" > ");
+  const fork = ancestors(n).find(a=>a.type==="fork");
+  const rows = [["状態", LABEL[n.status]+(n.type==="fork"?"（分岐点）":"")],["分岐元", fork?fork.title:""],["結論", n.conclusion],["止めた位置", n.stoppedAt],["止めた理由", n.parkReason],["再開条件", n.resumeWhen],["却下理由", n.rejectReason],["メモ", (n.notes||[]).join("\n")],["ツール", n.source&&n.source.tool]]
+    .filter(r=>r[1]).map(r=>`<dt>${r[0]}</dt><dd>${esc(r[1])}</dd>`).join("");
+  return `<h2>復帰カード</h2><h3>${esc(n.title)} <span class="id">${n.id}</span></h3><div class="path">${esc(path)}</div><dl>${rows}</dl>
+    <h2 style="margin-top:14px">再開プロンプト</h2><pre id="pack">${esc(resumePack(n))}</pre>
+    <div class="actions"><button class="primary" data-copy="pack">プロンプトをコピー</button><button data-copy-text="edaori.py resume ${n.id}">コマンドをコピー</button></div>`;
+}
+
+// ---------- events
+document.addEventListener("click", e => {
+  const go = e.target.closest("[data-go]"); if (go){ SEL = go.dataset.go; render(); return; }
+  const cp = e.target.closest("[data-copy]"); if (cp){ navigator.clipboard.writeText($("#"+cp.dataset.copy).textContent).then(()=>toast("コピーしました")); return; }
+  const ct = e.target.closest("[data-copy-text]"); if (ct){ navigator.clipboard.writeText(ct.dataset.copyText).then(()=>toast("コピーしました")); return; }
+  const li = e.target.closest("li[data-id]"); if (li){ SEL = li.dataset.id; render(); }
+});
+function load(text){
+  if (text === lastRaw) return;
+  try { const d = JSON.parse(text); if (!d.nodes || !d.session) throw new Error("形式が違います"); DATA = d; lastRaw = text; render(); }
+  catch(err){ toast("読み込めません: "+err.message); }
+}
+let handle = null;
+$("#open").onclick = async () => {
+  if (window.showOpenFilePicker){
+    try { [handle] = await showOpenFilePicker({types:[{description:"branches.json",accept:{"application/json":[".json"]}}]});
+      load(await (await handle.getFile()).text()); toast("ファイルを監視中（2秒ごとに更新）"); } catch(_){}
+  } else $("#file").click();
+};
+$("#file").onchange = async e => { const f=e.target.files[0]; if (f) load(await f.text()); };
+document.addEventListener("dragover", e => e.preventDefault());
+document.addEventListener("drop", async e => { e.preventDefault(); const f=e.dataTransfer.files[0]; if (f) load(await f.text()); });
+setInterval(async () => {
+  try {
+    if (handle) load(await (await handle.getFile()).text());
+    else if (new URLSearchParams(location.search).has("live")) { const r = await fetch("data.json",{cache:"no-store"}); if (r.ok) load(await r.text()); }
+  } catch(_){}
+}, 2000);
+if (new URLSearchParams(location.search).has("live")) fetch("data.json",{cache:"no-store"}).then(r=>r.text()).then(load).catch(()=>{});
+</script>
+</body>
+</html>
